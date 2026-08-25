@@ -1,3 +1,5 @@
+import type { OcppErrorCode, OcppStatus } from '@/constants/ocpp.constants';
+
 export const CALL = 2;
 export const CALLRESULT = 3;
 export const CALLERROR = 4;
@@ -41,12 +43,16 @@ export interface PendingRequest {
 
 export type ConnectionStatus = 'disconnected' | 'connected' | 'charging' | 'idle';
 
+export type ConnectorStatus = OcppStatus;
+
 export interface Connector {
   id: number;
-  status: 'Available' | 'Preparing' | 'Charging' | 'SuspendedEVSE' | 'SuspendedEV' | 'Finishing' | 'Reserved' | 'Unavailable' | 'Faulted';
+  status: ConnectorStatus;
   idTag?: string;
   transactionId?: number;
-  errorCode?: string;
+  errorCode?: OcppErrorCode;
+  lastNonFaultStatus?: ConnectorStatus;
+  activeFaultCode?: Exclude<OcppErrorCode, 'NoError'>;
   info?: string;
   timestamp?: string;
   vendorId?: string;

@@ -58,6 +58,7 @@ const ocppSlice = createSlice({
         const connectors: Connector[] = Array.from({ length: numConnectors }, (_, i) => ({
           id: i + 1,
           status: 'Available' as const,
+          errorCode: 'NoError',
           idTag: i === 0 ? 'DEMO1234' : undefined, // default idTag for first connector
         }))
         return {

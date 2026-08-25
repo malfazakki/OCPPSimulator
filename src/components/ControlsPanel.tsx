@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { faultCatalogue, activateConnectorFault, clearConnectorFault } from '@/features/ocpp/faults';
 import { useOcppConnection } from '@/features/ocpp/hooks';
 import type { ChargePoint } from '@/features/ocpp/ocppSlice';
-import { setTransactionId, updateConnectorStatus } from '@/features/ocpp/ocppSlice';
+import { setTransactionId, updateConnector, updateConnectorStatus } from '@/features/ocpp/ocppSlice';
 import { useBatteryState } from '@/hooks/useBatteryState';
 import { getMeterForCp } from '@/services/meterModel';
-import { Plug, Power, Activity, Lock } from 'lucide-react';
+import { Plug, Power, Activity, Lock, AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useDispatch } from 'react-redux';
@@ -34,6 +35,7 @@ export const ControlsPanel = ({ cp, deviceSettings }: ControlsPanelProps) => {
   const { beginCharge, endCharge, setMeterStart } = useBatteryState();
   const numConnectors = deviceSettings?.connectors || 1;
   const [selectedConnectorId, setSelectedConnectorId] = useState(1);
+  const [selectedFaultCode, setSelectedFaultCode] = useState<(typeof faultCatalogue)[number]['errorCode']>('HighTemperature');
 
   const form = useForm<PanelForm>({
     defaultValues: {
@@ -49,6 +51,10 @@ export const ControlsPanel = ({ cp, deviceSettings }: ControlsPanelProps) => {
   }, [numConnectors, selectedConnectorId]);
 
   const connectorId = selectedConnectorId;
+  const activeConnector = cp.runtime?.connectors?.find(c => c.id === connectorId);
+  const hasActiveFault = activeConnector?.status === 'Faulted' && !!activeConnector.activeFaultCode;
+  const activeFaultDefinition = faultCatalogue.find((fault) => fault.errorCode === activeConnector?.activeFaultCode);
+  const sameFaultAlreadyActive = hasActiveFault && activeConnector?.activeFaultCode === selectedFaultCode;
 
   const onBoot = () => {
     const v = form.getValues();
@@ -170,6 +176,63 @@ export const ControlsPanel = ({ cp, deviceSettings }: ControlsPanelProps) => {
     });
   };
 
+  const onSimulateFault = async () => {
+    if (!activeConnector || !connected) return;
+    if (sameFaultAlreadyActive) return;
+
+    const nextConnector = activateConnectorFault(activeConnector, selectedFaultCode);
+    dispatch(
+      updateConnector({
+        id: cp.id,
+        connectorId,
+        updates: {
+          status: nextConnector.status,
+          errorCode: nextConnector.errorCode,
+          lastNonFaultStatus: nextConnector.lastNonFaultStatus,
+          activeFaultCode: nextConnector.activeFaultCode,
+        },
+      })
+    );
+
+    await call.mutateAsync({
+      action: 'StatusNotification',
+      payload: {
+        connectorId,
+        status: 'Faulted',
+        errorCode: selectedFaultCode,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  };
+
+  const onClearFault = async () => {
+    if (!activeConnector || !hasActiveFault || !connected) return;
+
+    const nextConnector = clearConnectorFault(activeConnector);
+    dispatch(
+      updateConnector({
+        id: cp.id,
+        connectorId,
+        updates: {
+          status: nextConnector.status,
+          errorCode: nextConnector.errorCode,
+          lastNonFaultStatus: nextConnector.lastNonFaultStatus,
+          activeFaultCode: nextConnector.activeFaultCode,
+        },
+      })
+    );
+
+    await call.mutateAsync({
+      action: 'StatusNotification',
+      payload: {
+        connectorId,
+        status: nextConnector.status,
+        errorCode: 'NoError',
+        timestamp: new Date().toISOString(),
+      },
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -201,6 +264,63 @@ export const ControlsPanel = ({ cp, deviceSettings }: ControlsPanelProps) => {
         </div>
 
         <div className='space-y-4'>
+          <div className='space-y-2.5'>
+            <div className='flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide'>
+              <AlertTriangle className='h-3.5 w-3.5' />
+              Fault Simulation
+            </div>
+            <div className='space-y-3 rounded-lg border bg-muted/20 p-3'>
+              <div className='flex items-center justify-between gap-2 text-xs text-muted-foreground'>
+                <span>Error</span>
+                <Select value={selectedFaultCode} onValueChange={(value) => setSelectedFaultCode(value as (typeof faultCatalogue)[number]['errorCode'])}>
+                  <SelectTrigger className='w-52'>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {faultCatalogue.map((fault) => (
+                      <SelectItem key={fault.errorCode} value={fault.errorCode}>
+                        {fault.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className='rounded-md border bg-background/60 p-2 text-xs text-muted-foreground'>
+                {hasActiveFault && activeFaultDefinition ? (
+                  <div className='space-y-1'>
+                    <div className='font-medium text-foreground'>🔴 {activeFaultDefinition.label}</div>
+                    <div>Connector {connectorId}</div>
+                    <div>{activeFaultDefinition.description}</div>
+                  </div>
+                ) : (
+                  <div className='text-muted-foreground'>No active fault</div>
+                )}
+              </div>
+
+              <div className='grid grid-cols-2 gap-2'>
+                <Button
+                  size='sm'
+                  variant='destructive'
+                  onClick={onSimulateFault}
+                  disabled={!connected || !activeConnector || sameFaultAlreadyActive}
+                  className='h-9 text-xs sm:text-sm'
+                >
+                  Simulate Fault
+                </Button>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  onClick={onClearFault}
+                  disabled={!connected || !hasActiveFault}
+                  className='h-9 text-xs sm:text-sm'
+                >
+                  Clear Fault
+                </Button>
+              </div>
+            </div>
+          </div>
+
           <div className='space-y-2.5'>
             <div className='flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide'>
               <Activity className='h-3.5 w-3.5' />
