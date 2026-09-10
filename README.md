@@ -25,7 +25,7 @@ This protocol allows:
 - Firmware updates and configuration management
 - Status notifications and diagnostics
 
-This simulator implements **OCPP 1.6** and allows you to test your CSMS by simulating one or multiple charge points, sending OCPP messages, and monitoring the communication flow.
+This simulator supports multiple OCPP protocol versions, including **OCPP 1.6**, and allows you to test your CSMS by simulating one or multiple charge points, sending OCPP messages, and monitoring the communication flow.
 
 ## UI Overview
 
@@ -123,6 +123,34 @@ A typical charging session flow:
 5. Monitor **MeterValues** being sent automatically
 6. **StopTx** - End the charging session
 7. **Unlock Cable** - Make connector available again
+
+## Fault Simulation
+
+The simulator includes a manual fault simulation workflow for OCPP protocol testing.
+
+1. Select a connector from the OCPP Controls panel.
+2. Choose a valid OCPP error code from the fault catalogue.
+3. Click **Simulate Fault** to set the connector status to **Faulted** and send a `StatusNotification` with the selected `errorCode`.
+4. Observe the outgoing OCPP frame in the existing Network Traffic monitor.
+5. Click **Clear Fault** to remove the active fault, restore the previous connector state, and send a recovery `StatusNotification` with `errorCode = NoError`.
+
+Example flow:
+
+```text
+Connector 1
+  ↓
+Simulate HighTemperature
+  ↓
+StatusNotification { connectorId: 1, errorCode: 'HighTemperature', status: 'Faulted' }
+  ↓
+CSMS receives the fault
+  ↓
+Clear Fault
+  ↓
+StatusNotification { connectorId: 1, errorCode: 'NoError', status: 'Available' }
+```
+
+This feature is intentionally manual and additive; it does not create random or delayed failures.
 
 ## Monitoring Charging Status
 

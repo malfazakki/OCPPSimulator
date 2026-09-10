@@ -8,7 +8,9 @@ export const statuses = [
   'Reserved',
   'Unavailable',
   'Faulted',
-];
+] as const;
+
+export type OcppStatus = (typeof statuses)[number];
 
 export const errorCodes = [
   'NoError',
@@ -26,4 +28,6 @@ export const errorCodes = [
   'ResetFailure',
   'UnderVoltage',
   'OverVoltage',
-];
+] as const;
+
+export type OcppErrorCode = (typeof errorCodes)[number];
