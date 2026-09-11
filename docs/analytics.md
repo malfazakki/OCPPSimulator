@@ -17,15 +17,26 @@ Without the variable, the app does not load Google Analytics or show analytics c
 
 - Nothing is sent to Google Analytics before an affirmative choice. Rejected events are discarded, never replayed.
 - `page_view`: dashboard, generic charge-point page, or other. Moving between individual charge points does not generate distinct page views.
-- `connection_created`: a charge point was added locally, not confirmation of a successful connection.
-- `simulation_start_requested`: StartTx was requested, not confirmation of a successful charging transaction.
-- No custom event payloads: no connection names, CP IDs, CSMS URLs, RFID tags, credentials or protocol frames. Page URLs and titles are fixed categories; referrers are blank. Google still receives normal browser/network metadata and uses pseudonymous analytics cookies after consent.
+- `charge_point_created`: protocol and configured connector count.
+- `connection_attempted`, `connection_connected`, `connection_disconnected`, `connection_error`: protocol and, for a close, its numeric WebSocket close code.
+- `ocpp_boot_notification`, `ocpp_heartbeat`, `ocpp_authorize`, `ocpp_status_notification`, `ocpp_unlock_connector`: manual action result and connector number where relevant.
+- `charging_started`: protocol, connector number and starting state of charge.
+- `charging_stopped`: protocol, connector number, session duration, delivered kWh, ending state of charge and stop reason.
+- `fault_simulated`, `fault_cleared`: connector number plus the allowlisted OCPP fault code and category.
+- GA4 records the event timestamp automatically. No custom date string is sent.
+- No connection names, CP IDs, CSMS URLs, RFID tags, credentials, transaction IDs or protocol frames are collected. Page URLs and titles are fixed categories; referrers are blank. Google still receives normal browser/network metadata and uses pseudonymous analytics cookies after consent.
 - Consent is saved locally under `ocpp-simulator:analytics-consent:v1`. Analytics cookies use the app-specific `ocppsim` prefix, host-only domain and `/OCPPSimulator/` path, with a configured 180-day lifetime.
 - **Analytics preferences** lets users change their choice. Withdrawal disables collection, removes this app's analytics cookies and reloads to unload Google's listeners. Previously collected data is not deleted by withdrawal.
 - The previous Vercel Analytics component is no longer mounted.
+
+To use the parameters in standard GA4 reports, register event-scoped custom dimensions for `protocol`, `result`, `source`, `reason`, `fault_code` and `fault_category`; register custom metrics for `connector_number`, `connector_count`, `energy_kwh`, `duration_seconds`, `start_soc_percent` and `end_soc_percent`. DebugView shows the raw parameters without this setup.
 
 ## Verify before enabling
 
 Use browser Network tools with cleared consent: no `googletagmanager.com` or Analytics collection request before acceptance or after rejection. Accept: one tag script, one page view; open a charge point: only a generic charge-point URL. Trigger Create/StartTx and inspect the corresponding event names with no user-entered data. Withdraw: app reloads, prefixed cookies disappear, no further analytics requests. Repeat with a narrow mobile viewport and keyboard controls.
 
 Remove the repository variable and redeploy to disable analytics globally. Restoring a prior release also rolls back the integration.
+
+## Local DebugView
+
+Create an ignored `.env.local` file with the measurement ID and `VITE_GA_DEBUG=true`, then restart the development server. Accept analytics in the local banner. Local events are marked with GA4 `debug_mode` and appear in **Admin → DebugView**. Never enable `VITE_GA_DEBUG` in the GitHub Pages workflow.

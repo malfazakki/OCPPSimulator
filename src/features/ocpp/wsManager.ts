@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { normalizeDeviceSettings, normalizeOcppConfiguration } from '@/constants/chargePointDefaults';
+import { trackConnectionState } from '@/lib/analytics';
 import { handleInboundFrame } from '@/services/inboundDispatcher';
 import { ensureMeterForCp, getMeterForCp } from '@/services/meterModel';
 import { store } from '@/store/store';
@@ -46,11 +47,13 @@ export function connectWs(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
+      trackConnectionState('attempted', protocol);
       const ws = new WebSocket(url, [protocol]);
       const client: Client = { ws, pending: new Map() };
       clients.set(id, client);
 
       ws.onopen = () => {
+        trackConnectionState('connected', protocol);
         // remember queryClient for this id so we can push frames from helpers
         clientsQuery.set(id, queryClient);
         onOpen?.();
@@ -167,6 +170,7 @@ export function connectWs(
       };
 
       ws.onclose = (ev) => {
+        trackConnectionState('disconnected', protocol, ev.code);
         onClose?.();
         pushFrame(queryClient, id, {
           ts: new Date().toISOString(),
@@ -196,6 +200,7 @@ export function connectWs(
       };
 
       ws.onerror = (e) => {
+        trackConnectionState('error', protocol);
         pushFrame(queryClient, id, {
           ts: new Date().toISOString(),
           dir: 'in',

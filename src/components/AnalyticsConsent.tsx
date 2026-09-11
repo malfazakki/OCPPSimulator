@@ -43,7 +43,7 @@ export function AnalyticsConsent() {
         <section aria-labelledby='analytics-title' className='w-96 max-w-full rounded-lg border bg-background p-4 shadow-lg'>
           <h2 id='analytics-title' className='font-semibold'>Help improve OCPP Simulator</h2>
           <p className='mt-2 text-sm text-muted-foreground'>
-            Optional Google Analytics cookies measure visits and feature use. Google receives browser and usage data.
+            Optional Google Analytics cookies measure visits, connection outcomes and simulated charging metrics such as duration and kWh. Google receives browser and usage data.
             We do not send CSMS addresses, charge point IDs, credentials or OCPP messages.
             Your choice is saved on this device. You can withdraw consent here anytime.
           </p>
