@@ -1,3 +1,4 @@
+import { trackUsage } from '@/lib/analytics';
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import type { errorCodes, statuses } from '../constants/ocpp.constants';
@@ -35,6 +36,7 @@ const useOcppActions = (cp: ChargePoint) => {
     });
 
   const startTx = async () => {
+    trackUsage('simulation_start_requested');
     const meterStart = Math.floor(1000 + Math.random() * 1000);
     // Many CSMS expect Authorize before StartTransaction
     await call
