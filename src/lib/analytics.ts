@@ -2,9 +2,7 @@
 const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID?.trim() ?? '';
 const siteUrl = 'https://ozgurbayram.github.io/OCPPSimulator/';
 const debugMode = import.meta.env.DEV && import.meta.env.VITE_GA_DEBUG === 'true';
-const consentKey = 'ocpp-simulator:analytics-consent:v1';
 const cookiePrefix = 'ocppsim';
-type Consent = 'granted' | 'denied';
 type Protocol = 'ocpp1.6' | 'ocpp2.0.1' | 'unknown';
 type ConnectionState = 'attempted' | 'connected' | 'disconnected' | 'error';
 type OcppAction = 'BootNotification' | 'Heartbeat' | 'Authorize' | 'StatusNotification' | 'UnlockConnector';
@@ -28,7 +26,6 @@ declare global {
   }
 }
 
-let consent: Consent | null = null;
 let initialized = false;
 let lastPage: string | undefined;
 
@@ -37,6 +34,7 @@ function debugLog(message: string) {
 }
 
 export function analyticsAvailable() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return false;
   const officialSite = import.meta.env.PROD &&
     window.location.origin === 'https://ozgurbayram.github.io' &&
     window.location.pathname.startsWith('/OCPPSimulator/');
@@ -44,35 +42,10 @@ export function analyticsAvailable() {
   return /^G-[A-Z0-9]+$/.test(measurementId) && (officialSite || debugMode);
 }
 
-export function getAnalyticsConsent(): Consent | null {
-  try {
-    const stored = localStorage.getItem(consentKey);
-    consent = stored === 'granted' || stored === 'denied' ? stored : null;
-  } catch { /* Keep the choice in memory when storage is unavailable. */ }
-  return consent;
-}
-
-export function setAnalyticsConsent(value: Consent) {
-  consent = value;
-  try { localStorage.setItem(consentKey, value); } catch { /* Session-only choice. */ }
-  if (value === 'denied') {
-    Object.assign(window, { [`ga-disable-${measurementId}`]: true });
-    // These cookies belong only to this app, not other GitHub Pages projects.
-    for (const cookie of document.cookie.split(';')) {
-      const name = cookie.trim().split('=')[0];
-      if (name.startsWith(`${cookiePrefix}_`)) {
-        document.cookie = `${name}=; Max-Age=0; Path=/OCPPSimulator/; Secure; SameSite=Lax`;
-      }
-    }
-    lastPage = undefined;
-  } else {
-    Object.assign(window, { [`ga-disable-${measurementId}`]: false });
-  }
-}
-
 function startAnalytics() {
-  if (!analyticsAvailable() || getAnalyticsConsent() !== 'granted') return false;
+  if (!analyticsAvailable()) return false;
   if (initialized) return true;
+  Object.assign(window, { [`ga-disable-${measurementId}`]: false });
   window.dataLayer = window.dataLayer || [];
   // Google explicitly requires the function's Arguments object in its command queue.
   window.gtag = function gtag() {

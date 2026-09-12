@@ -265,6 +265,6 @@ yarn lint
 ```
 
 
-## Optional analytics
+## Analytics
 
-The official GitHub Pages deployment supports opt-in Google Analytics 4. Analytics is disabled without a measurement ID and on localhost or other hosts. See [setup and privacy details](docs/analytics.md).
+The official GitHub Pages deployment supports Google Analytics 4. Analytics starts automatically when a measurement ID is configured and stays disabled on localhost or other hosts. See [setup and privacy details](docs/analytics.md).
