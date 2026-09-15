@@ -145,6 +145,8 @@ export const ControlsPanel = ({ cp, deviceSettings }: ControlsPanelProps) => {
     dispatch(updateConnectorStatus({ id: cp.id, connectorId, status: 'Charging' }));
     // begin local battery simulation and periodic MeterValues pushes
     setMeterStart(meterStart);
+    const meter = getMeterForCp(cp.id);
+    meter?.start(txid, connectorId, meterStart, deviceSettings?.batteryStartPercent);
     beginCharge(() => {
       onMeterValues();
     });
@@ -165,6 +167,7 @@ export const ControlsPanel = ({ cp, deviceSettings }: ControlsPanelProps) => {
       const st = m?.getState(connectorId);
       meterStop = Math.floor(Math.max(0, Number(st?.energyWh || 0)));
       endSocPercent = typeof st?.socPct === 'number' ? st.socPct : undefined;
+      m?.stop(tx);
     } catch {}
     await call.mutateAsync({
       action: 'StopTransaction',
