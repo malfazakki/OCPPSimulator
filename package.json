@@ -1,5 +1,5 @@
 {
-	"name": "ocpp-simulate",
+	"name": "malfa-ocpp-simulator",
 	"private": true,
 	"version": "0.0.0",
 	"license": "MIT",

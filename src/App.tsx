@@ -1,6 +1,7 @@
 import { AnalyticsTracker } from './components/AnalyticsTracker';
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { SEO } from './components/SEO';
+import { Toaster } from './components/ui/sonner';
 import ChargePointConnection from './pages/ChargePointConnection';
 import Dashboard from './pages/Dashboard';
 
@@ -13,6 +14,7 @@ const App = () => {
         <Route path='/' element={<Dashboard />} />
         <Route path='/cp/:id' element={<ChargePointConnection />} />
       </Routes>
+      <Toaster />
     </HashRouter>
   );
 };

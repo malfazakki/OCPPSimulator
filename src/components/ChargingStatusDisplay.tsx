@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Battery, Clock, Gauge, Zap, TrendingUp } from "lucide-react";
 import type { Connector } from "@/types/ocpp";
 
@@ -78,86 +77,101 @@ export function ChargingStatusDisplay({
 		const connectorIsCharging = isConnectorCharging;
 
 		return (
-			<Card key={connectorId}>
-				<CardHeader>
-					<CardTitle className='flex items-center gap-2'>
-						<Zap className='h-5 w-5' />
-						Connector {connectorId}
+			<Card key={connectorId} className='rounded-xl border border-border bg-card shadow-xs'>
+				<CardHeader className='pb-3'>
+					<CardTitle className='flex items-center gap-2 text-base font-bold tracking-tight'>
+						<div className='flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-primary'>
+							<Zap className='h-4 w-4' />
+						</div>
+						<span>Connector #{connectorId}</span>
 						{connector?.transactionId ? (
-							<Badge variant='outline' className='ml-auto'>
-								TX {connector.transactionId}
+							<Badge
+								variant='outline'
+								className='ml-auto font-mono text-xs border-primary/30 text-primary bg-primary/10'
+							>
+								TX #{connector.transactionId}
 							</Badge>
 						) : null}
 					</CardTitle>
 				</CardHeader>
-				<CardContent className='space-y-5'>
-					<div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-						<div className='flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+				<CardContent className='space-y-4'>
+					<div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
+						<div className='flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3.5 py-2.5'>
 							<div className='flex items-center gap-2'>
 								{connectorIsCharging ? (
-									<Zap className='h-4 w-4 text-primary' />
+									<Zap className='h-4 w-4 text-emerald-500' />
 								) : (
 									<Battery className='h-4 w-4 text-muted-foreground' />
 								)}
-								<span className='text-sm font-medium'>Status</span>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Status</span>
 							</div>
 							<Badge
-								variant={isConnectorCharging ? "default" : "secondary"}
-								className='flex items-center gap-1.5 shrink-0'
+								variant='outline'
+								className={`flex items-center gap-1.5 shrink-0 text-xs font-medium ${
+									isConnectorCharging
+										? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+										: "bg-muted text-muted-foreground border-border"
+								}`}
 							>
-								{isConnectorCharging ? <Zap className='h-3 w-3' /> : <Clock className='h-3 w-3' />}
+								<span
+									className={`h-1.5 w-1.5 rounded-full ${
+										isConnectorCharging ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+									}`}
+								/>
 								{displayStatus}
 							</Badge>
 						</div>
-						<div className='flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+						<div className='flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3.5 py-2.5'>
 							<div className='flex items-center gap-2'>
 								<Gauge className='h-4 w-4 text-muted-foreground' />
-								<span className='text-sm font-medium'>Power</span>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Power</span>
 							</div>
-							<span className='text-sm font-mono'>{powerKW.toFixed(2)} kW</span>
+							<span className='text-sm font-bold font-mono text-foreground'>{powerKW.toFixed(2)} kW</span>
 						</div>
-						<div className='flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+						<div className='flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3.5 py-2.5'>
 							<div className='flex items-center gap-2'>
 								<TrendingUp className='h-4 w-4 text-muted-foreground' />
-								<span className='text-sm font-medium'>Current</span>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Current</span>
 							</div>
-							<span className='text-sm font-mono'>{currentA.toFixed(1)} A</span>
+							<span className='text-sm font-bold font-mono text-foreground'>{currentA.toFixed(1)} A</span>
 						</div>
-						<div className='flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+						<div className='flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3.5 py-2.5'>
 							<div className='flex items-center gap-2'>
 								<Battery className='h-4 w-4 text-muted-foreground' />
-								<span className='text-sm font-medium'>Voltage</span>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wider'>Voltage</span>
 							</div>
-							<span className='text-sm font-mono'>{voltageV.toFixed(0)} V</span>
+							<span className='text-sm font-bold font-mono text-foreground'>{voltageV.toFixed(0)} V</span>
 						</div>
 					</div>
 
 					{chargingType === "DC" && socPct !== undefined && (
-						<div className='space-y-2'>
-							<div className='flex items-center justify-between text-sm'>
-								<span>Battery Level</span>
-								<span>{socPct.toFixed(1)}%</span>
+						<div className='space-y-2 rounded-lg border border-border bg-muted/20 p-3.5'>
+							<div className='flex items-center justify-between text-xs font-medium'>
+								<span className='text-muted-foreground uppercase tracking-wider'>Battery State of Charge (SoC)</span>
+								<span className='font-mono font-bold text-foreground'>{socPct.toFixed(1)}%</span>
 							</div>
 							<Progress value={socPct} className='h-2' />
 						</div>
 					)}
 
-					<Separator />
-
-					<div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-						<div className='flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+					<div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
+						<div className='flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3.5 py-2.5'>
 							<div className='flex items-center gap-2'>
 								<Zap className='h-4 w-4 text-muted-foreground' />
-								<span className='text-sm font-medium'>Energy</span>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wider'>
+									Energy Active Import
+								</span>
 							</div>
-							<span className='text-sm font-mono'>{energyWh.toFixed(2)} Wh</span>
+							<span className='text-sm font-bold font-mono text-primary'>{(energyWh / 1000).toFixed(3)} kWh</span>
 						</div>
-						<div className='flex items-center justify-between rounded-lg border bg-muted/30 px-4 py-3'>
+						<div className='flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3.5 py-2.5'>
 							<div className='flex items-center gap-2'>
 								<Clock className='h-4 w-4 text-muted-foreground' />
-								<span className='text-sm font-medium'>Progress</span>
+								<span className='text-xs font-semibold text-muted-foreground uppercase tracking-wider'>
+									Charge Target Progress
+								</span>
 							</div>
-							<span className='text-sm font-mono'>{chargingProgress.toFixed(1)}%</span>
+							<span className='text-sm font-bold font-mono text-foreground'>{chargingProgress.toFixed(1)}%</span>
 						</div>
 					</div>
 				</CardContent>
