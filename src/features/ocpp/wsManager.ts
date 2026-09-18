@@ -479,13 +479,13 @@ export function connectWs(
 								startLocalFlow: async ({ connectorId, idTag }: { connectorId?: number; idTag?: string }) => {
 									const state = store.getState();
 									const cp = state.ocpp.items[id];
-									const conn = connectorId ?? cp?.runtime?.activeConnectorId ?? 1;
-									const currentConn = cp?.runtime?.connectors?.find((c) => c.id === conn);
+									const conn = Number(connectorId) || cp?.runtime?.activeConnectorId || 1;
+									const currentConn = cp?.runtime?.connectors?.find((c) => Number(c.id) === conn);
 									if (currentConn?.transactionId != null || currentConn?.status === "Charging") {
 										console.log(`[Simulator] Connector ${conn} is already charging. Ignoring duplicate start.`);
 										return;
 									}
-									const tag = idTag ?? currentConn?.idTag ?? "DEMO1234";
+									const tag = idTag || currentConn?.idTag || "DEMO1234";
 									try {
 										await callAction(id, "Authorize", { idTag: tag });
 									} catch {}
@@ -494,7 +494,8 @@ export function connectWs(
 										status: "Preparing",
 										errorCode: "NoError",
 									});
-									const meterStart = Math.floor(1000 + Math.random() * 1000);
+									const existingEnergy = getMeterForCp(id)?.getState(conn)?.energyWh || 0;
+									const meterStart = Math.floor(existingEnergy > 0 ? existingEnergy : 1000 + Math.random() * 1000);
 									const res = await callAction(id, "StartTransaction", {
 										connectorId: conn,
 										idTag: tag,
@@ -520,8 +521,9 @@ export function connectWs(
 								stopLocalFlow: async ({ transactionId }: { transactionId: number }) => {
 									const state = store.getState();
 									const cp = state.ocpp.items[id];
-									const conn = cp?.runtime?.activeConnectorId ?? 1;
-									const tag = cp?.runtime?.connectors?.find((c) => c.id === conn)?.idTag ?? "DEMO1234";
+									const connObj = cp?.runtime?.connectors?.find((c) => c.transactionId === transactionId);
+									const conn = connObj ? Number(connObj.id) : (cp?.runtime?.activeConnectorId ?? 1);
+									const tag = connObj?.idTag ?? "DEMO1234";
 									let meterStop = 0;
 									try {
 										const m = getMeterForCp(id);
