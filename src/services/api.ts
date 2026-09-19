@@ -1,4 +1,6 @@
 const API_BASE = "/api";
+// Disable local Express backend API calls if running on static production hosting (e.g. Vercel)
+const IS_STATIC_HOSTING = typeof window !== "undefined" && window.location.hostname.includes("vercel.app");
 
 export interface ActiveSession {
 	id: number;
@@ -18,13 +20,13 @@ export interface ActiveSession {
 }
 
 export async function getActiveSession(cpId: string, connectorId = 1): Promise<ActiveSession | null> {
+	if (IS_STATIC_HOSTING) return null;
 	try {
 		const res = await fetch(`${API_BASE}/charge-points/${encodeURIComponent(cpId)}/active-session?connectorId=${connectorId}`);
 		if (!res.ok) return null;
 		const data = await res.json();
 		return data.activeSession || null;
-	} catch (err) {
-		console.warn("[Simulator API] Failed to fetch active session:", err);
+	} catch {
 		return null;
 	}
 }
@@ -43,6 +45,7 @@ export async function syncSession(
 		voltageV?: number;
 	},
 ): Promise<boolean> {
+	if (IS_STATIC_HOSTING) return true;
 	try {
 		const res = await fetch(`${API_BASE}/charge-points/${encodeURIComponent(cpId)}/sync-session`, {
 			method: "POST",
@@ -50,13 +53,13 @@ export async function syncSession(
 			body: JSON.stringify(data),
 		});
 		return res.ok;
-	} catch (err) {
-		console.warn("[Simulator API] Failed to sync session:", err);
+	} catch {
 		return false;
 	}
 }
 
 export async function stopSession(cpId: string, transactionId?: number, meterStopWh?: number): Promise<boolean> {
+	if (IS_STATIC_HOSTING) return true;
 	try {
 		const res = await fetch(`${API_BASE}/charge-points/${encodeURIComponent(cpId)}/stop-session`, {
 			method: "POST",
@@ -64,8 +67,7 @@ export async function stopSession(cpId: string, transactionId?: number, meterSto
 			body: JSON.stringify({ transactionId, meterStopWh }),
 		});
 		return res.ok;
-	} catch (err) {
-		console.warn("[Simulator API] Failed to stop session:", err);
+	} catch {
 		return false;
 	}
 }
@@ -79,6 +81,7 @@ export async function saveOcppLog(
 		payload?: unknown;
 	},
 ): Promise<boolean> {
+	if (IS_STATIC_HOSTING) return true;
 	try {
 		const res = await fetch(`${API_BASE}/charge-points/${encodeURIComponent(cpId)}/logs`, {
 			method: "POST",
